@@ -5,10 +5,9 @@ edition = "2021"
 
 [dependencies]
 #the whole point
-#, default-features = false, features = ["bevy_gltf", "bevy_core_pipeline", "animation", "dynamic_linking", "tonemapping_luts", "bevy_sprite", "bevy_window", "png"]
-bevy = { version = "0.15", features = ["jpeg"]}
+bevy = { version = "0.15", default-features = false, features = ["bevy_gltf", "bevy_core_pipeline", "animation", "dynamic_linking", "tonemapping_luts", "bevy_sprite", "bevy_window", "jpeg", "png", "multi_threaded"]}
+#useful for debugging
 bevy-inspector-egui="0.28"
-smooth-bevy-cameras = "0.13"
 #used for menu
 bevy_egui = "0.31.1"
 #used for easy orbit camera
@@ -26,6 +25,9 @@ opt-level = 3
 [profile.release]
 codegen-units = 1
 lto = "thin"
+opt-level = "z"
+strip = "debuginfo"
+
 #particular optimization for wasm
 [profile.wasm-release]
 inherits = "release"
@@ -35,11 +37,18 @@ strip = "debuginfo"
 
 #this library features
 [features]
-#default (support for x11)
-default = ["x11", "wayland"]
+#default (enable all features by default)
+default = ["x11", "wayland", "dynamic_linking"]
 #support for x11
 x11 = ["bevy/x11"]
 #support for wayland
 wayland = ["bevy/wayland"]
 dynamic_linking = ["bevy/dynamic_linking"]
 
+
+#patches for zune jpeg
+[patch.crates-io]
+zune-jpeg = { git = "https://github.com/etemesi254/zune-image", branch = "zune-jpeg-4.12"}
+
+[patch."https://github.com/etemesi254/zune-image"]
+zune-core = "0.4.12"

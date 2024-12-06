@@ -17,22 +17,25 @@ use pipelines_ready::*;
 
 pub struct LoadingScreenPlugin;
 
-fn is_loading(r: Res<LoadingState>)->bool{
-    *r==LoadingState::Loading
+fn is_loading(r: Res<LoadingState>) -> bool {
+    *r == LoadingState::Loading
 }
 
-impl Plugin for LoadingScreenPlugin{
+impl Plugin for LoadingScreenPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PipelinesReadyPlugin)
-        .insert_resource(LoadingState::default())
-        .insert_resource(LoadingData::new(5))
-        .add_systems(Startup, setup)
-        //load_loading_screen
-        .add_systems(
-            Update,
-            (update_loading_data, update_loading_screen).run_if(is_loading),
-        )
-        .add_systems(Update, clear_loading_screen.run_if(resource_changed::<LoadingState>));
+            .insert_resource(LoadingState::default())
+            .insert_resource(LoadingData::new(5))
+            .add_systems(Startup, setup)
+            //load_loading_screen
+            .add_systems(
+                Update,
+                (update_loading_data, update_loading_screen).run_if(is_loading),
+            )
+            .add_systems(
+                Update,
+                clear_loading_screen.run_if(resource_changed::<LoadingState>),
+            );
     }
 }
 
@@ -44,25 +47,30 @@ fn clear_loading_screen(
     mut camera: Option<Single<&mut Camera, With<VisualizzationComponents>>>,
     loading_data: Res<LoadingData>,
 ) {
-
-    match res.as_ref(){
+    match res.as_ref() {
         LoadingState::Ready => {
             for entity in loading.iter() {
                 commands.entity(entity).despawn_recursive();
             }
-            loaded.iter_mut().for_each(|(_, mut visibility )| {
+            loaded.iter_mut().for_each(|(_, mut visibility)| {
                 *visibility = Visibility::Visible;
             });
-            if let Some(camera) = camera.as_mut(){
-                camera.is_active=true;
+            if let Some(camera) = camera.as_mut() {
+                camera.is_active = true;
             }
-        },
+        }
         LoadingState::Loading => {
             for (entity, _) in loaded.iter() {
                 commands.entity(entity).despawn_recursive();
             }
-            commands.spawn((LoadingScreen, Sprite{image: loading_data.img.clone(), ..default()}));
-            commands.spawn((LoadingScreen, Camera2d::default()));
+            commands.spawn((
+                LoadingScreen,
+                Sprite {
+                    image: loading_data.img.clone(),
+                    ..default()
+                },
+            ));
+            commands.spawn((LoadingScreen, Camera2d));
         }
     }
 }
@@ -88,9 +96,9 @@ pub struct LoadingData {
     // Current number of confirmation frames.
     confirmation_frames_count: usize,
 }
-impl LoadingData{
+impl LoadingData {
     #[allow(dead_code)]
-    pub fn add_asset<C: Asset>(&mut self, asset: &Handle<C>){
+    pub fn add_asset<C: Asset>(&mut self, asset: &Handle<C>) {
         self.loading_assets.push(asset.clone().untyped());
     }
 }
@@ -108,7 +116,7 @@ impl LoadingData {
 
 // This resource will hold the level related systems ID for later use.
 fn setup(asset_server: ResMut<AssetServer>, mut loading_data: ResMut<LoadingData>) {
-    loading_data.img = asset_server.load("logo2.png");
+    loading_data.img = asset_server.load("logo2.jpg");
 }
 
 // Marker component for easier deletion of entities.
@@ -117,11 +125,7 @@ fn setup(asset_server: ResMut<AssetServer>, mut loading_data: ResMut<LoadingData
 pub struct VisualizzationComponents;
 
 // Removes all currently loaded level assets from the game World.
-pub fn unload_current_visualization(
-    mut loading_state: ResMut<LoadingState>,
-    
-    
-) {
+pub fn unload_current_visualization(mut loading_state: ResMut<LoadingState>) {
     *loading_state = LoadingState::Loading;
 }
 
@@ -132,7 +136,6 @@ fn update_loading_data(
     asset_server: Res<AssetServer>,
     pipelines_ready: Res<PipelinesReady>,
 ) {
-    
     if !loading_data.loading_assets.is_empty() || !pipelines_ready.0 {
         // If we are still loading assets / pipelines are not fully compiled,
         // we reset the confirmation frame count.
@@ -162,7 +165,6 @@ fn update_loading_data(
         loading_data.confirmation_frames_count += 1;
         if loading_data.confirmation_frames_count == loading_data.confirmation_frames_target {
             *loading_state = LoadingState::Ready;
-          
         }
     }
 }
@@ -174,9 +176,11 @@ struct LoadingScreen;
 // Determines when to show the loading screen
 fn update_loading_screen(
     mut image: Query<&mut Transform, (With<LoadingScreen>, With<Sprite>)>,
-    timer: Res<Time>
+    timer: Res<Time>,
 ) {
-    image.iter_mut().for_each(|mut x| x.rotate_z(-timer.delta_secs()));
+    image
+        .iter_mut()
+        .for_each(|mut x| x.rotate_z(-timer.delta_secs()));
 }
 
 mod pipelines_ready {
