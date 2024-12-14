@@ -62,7 +62,9 @@ fn clear_loading_screen(
 ) {
     info!("clear_loading_screen");
     for entity in loading.iter() {
-        commands.entity(entity).despawn_recursive();
+        if let Some(x) = commands.get_entity(entity){
+            x.try_despawn_recursive();
+        }
     }
     loaded.iter_mut().for_each(|mut visibility| {
         *visibility = Visibility::Visible;
@@ -126,7 +128,9 @@ pub struct VisualizzationComponents;
 // Removes all currently loaded level assets from the game World.
 pub fn unload_current_visualization(mut loading_state: ResMut<NextState<LoadingState>>, mut commands: Commands, loaded: Query<Entity, With<VisualizzationComponents>>) {
     for entity in loaded.iter() {
-        commands.entity(entity).despawn_recursive();
+        if let Some(x) = commands.get_entity(entity){
+            x.try_despawn_recursive();
+        }
     }
     loading_state.set(LoadingState::Loading);
 }
